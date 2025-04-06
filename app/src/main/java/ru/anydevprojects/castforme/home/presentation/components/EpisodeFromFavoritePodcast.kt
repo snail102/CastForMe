@@ -15,10 +15,12 @@ import ru.anydevprojects.castforme.ui.theme.AppTheme
 @Composable
 fun EpisodeFromFavoritePodcast(
     episodeUi: EpisodeUi,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier
+        modifier = modifier,
+        onClick = onClick
     ) {
         ListItem(
             headlineContent = {
@@ -46,7 +48,8 @@ private fun EpisodeFromFavoritePodcastPreview() {
                 id = 0L,
                 imageUrl = "",
                 name = "12345"
-            )
+            ),
+            onClick = {},
         )
     }
 }

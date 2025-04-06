@@ -30,8 +30,15 @@ class HomeViewModel @Inject constructor(
 ) {
 
     init {
+        fetchFavoriteEpisodes()
         podcastFeedFavoriteObserver()
         episodeFromFavoritePodcastFeedObserver()
+    }
+
+    private fun fetchFavoriteEpisodes() {
+        viewModelScope.launch {
+            podcastEpisodeRepository.fetchAllEpisodesFavorites()
+        }
     }
 
     private fun episodeFromFavoritePodcastFeedObserver() {
@@ -46,7 +53,6 @@ class HomeViewModel @Inject constructor(
 
     private fun podcastFeedFavoriteObserver() {
         podcastFeedRepository.getFavoritePodcastFeedsFlow().onEach { podcastFeeds ->
-            Log.d("favoritePodcasts", podcastFeeds.toString())
             updateState {
                 copy(
                     favoritePodcastState = lastContentState.favoritePodcastState.copy(

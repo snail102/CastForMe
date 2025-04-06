@@ -11,6 +11,8 @@ interface PodcastEpisodeRepository {
 
     fun getAllEpisodesFavorites(): Flow<List<PodcastEpisode>>
 
+    suspend fun fetchAllEpisodesFavorites(): Result<Unit>
+
     suspend fun getEpisodesByPodcastId(podcastId: Long): Result<List<PodcastEpisode>>
 
     suspend fun getEpisodesFromFavorites(): Result<List<PodcastEpisode>>

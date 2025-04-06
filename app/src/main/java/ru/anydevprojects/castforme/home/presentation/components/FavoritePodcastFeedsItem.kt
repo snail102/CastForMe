@@ -16,8 +16,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.carousel.CarouselState
 import androidx.compose.material3.carousel.HorizontalUncontainedCarousel
+import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -38,9 +41,8 @@ fun FavoritePodcastFeedsItem(
     onPodcastFeedItemClick: (FavoritePodcastFeedItem) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val state = remember(favoritePodcastState) {
-        CarouselState(itemCount = { favoritePodcastState.favoritePodcastFeeds.size })
-    }
+    val state = rememberCarouselState { favoritePodcastState.favoritePodcastFeeds.size }
+
 
     HorizontalUncontainedCarousel(
         modifier = modifier.wrapContentSize(),

@@ -32,6 +32,11 @@ fun Root() {
                         )
                     )
                 },
+                onPodcastEpisodeItemClick = {
+                    navController.navigate(
+                        PodcastEpisodeDetailScreenDestination(episodeId = it)
+                    )
+                }
             )
         }
         composable<FavoritePodcastFeedScreenDestination> {

@@ -22,6 +22,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ru.anydevprojects.castforme.home.presentation.components.EpisodeFromFavoritePodcast
 import ru.anydevprojects.castforme.home.presentation.components.FavoritePodcastFeedsItem
+import ru.anydevprojects.castforme.home.presentation.models.EpisodeUi
 import ru.anydevprojects.castforme.home.presentation.models.FavoriteItem
 import ru.anydevprojects.castforme.home.presentation.models.HomeEvent
 import ru.anydevprojects.castforme.home.presentation.models.HomeIntent
@@ -33,6 +34,7 @@ import ru.anydevprojects.castforme.utils.ui.rememberFlowWithLifecycle
 fun HomeScreen(
     onAllFavoritePodcastFeedItemClick: () -> Unit,
     onFavoritePodcastFeedItemClick: (Long) -> Unit,
+    onPodcastEpisodeItemClick: (Long) -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
 
@@ -63,6 +65,7 @@ fun HomeScreen(
         },
         onAllFavoritePodcastFeedItemClick = onAllFavoritePodcastFeedItemClick,
         onFavoritePodcastFeedItemClick = { onFavoritePodcastFeedItemClick(it.id) },
+        onPodcastEpisodeItemClick = { onPodcastEpisodeItemClick(it.id) },
     )
 }
 
@@ -72,6 +75,7 @@ private fun HomeContent(
     onImportBtnClick: () -> Unit,
     onAllFavoritePodcastFeedItemClick: () -> Unit,
     onFavoritePodcastFeedItemClick: (FavoriteItem.FavoritePodcastFeedItem) -> Unit,
+    onPodcastEpisodeItemClick: (EpisodeUi) -> Unit,
 ) {
     Scaffold { paddingValues ->
         LazyColumn(
@@ -106,7 +110,10 @@ private fun HomeContent(
             ) {
                 EpisodeFromFavoritePodcast(
                     modifier = Modifier.fillMaxWidth(),
-                    episodeUi = it
+                    episodeUi = it,
+                    onClick = {
+                        onPodcastEpisodeItemClick(it)
+                    }
                 )
             }
         }
@@ -123,7 +130,8 @@ private fun HomeContentPreview() {
             state = HomeState(),
             onImportBtnClick = {},
             onAllFavoritePodcastFeedItemClick = {},
-            onFavoritePodcastFeedItemClick = {}
+            onFavoritePodcastFeedItemClick = {},
+            onPodcastEpisodeItemClick = {}
         )
     }
 }
