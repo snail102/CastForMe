@@ -1,0 +1,6 @@
+package ru.anydevprojects.castforme.favoritePodcastFeed.presentation
+
+import kotlinx.serialization.Serializable
+
+@Serializable
+data object FavoritePodcastFeedScreenDestination
