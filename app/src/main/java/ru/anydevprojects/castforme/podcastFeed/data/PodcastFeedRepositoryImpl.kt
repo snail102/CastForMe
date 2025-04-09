@@ -46,4 +46,20 @@ class PodcastFeedRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun fetchPodcastFeedById(id: Long): Result<Unit> {
+        return kotlin.runCatching {
+
+            val podcastFeedResponse = httpClient.get("podcasts/byfeedid") {
+                parameter("id", id)
+            }.body<PodcastFeedResponse>()
+
+            val isFavorite = favoritePodcastFeedDao
+                .getByPodcastId(podcastId = podcastFeedResponse.feed.id) != null
+
+            val remotePodcastFeed = podcastFeedResponse.feed.toDomain(isFavorite = isFavorite)
+
+            podcastFeedDao.insert(remotePodcastFeed.toEntity())
+        }
+    }
+
 }

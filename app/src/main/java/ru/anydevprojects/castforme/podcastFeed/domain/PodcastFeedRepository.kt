@@ -11,4 +11,6 @@ interface PodcastFeedRepository {
 
     suspend fun getPodcastFeedByUrl(url: String): Result<PodcastFeed>
 
+    suspend fun fetchPodcastFeedById(id: Long): Result<Unit>
+
 }

@@ -105,4 +105,6 @@ dependencies {
 
     implementation(libs.coil)
 
+    implementation(libs.richeditor.compose)
+
 }

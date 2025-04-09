@@ -38,7 +38,8 @@ class PodcastEpisodeRepositoryImpl @Inject constructor(
     override suspend fun fetchAllEpisodesFavorites(): Result<Unit> {
         return runCatching {
             val favoritePodcastFeedIds =
-                favoritePodcastFeedDao.getAllFavorite().map { it.podcastId }.joinToString(separator = ",")
+                favoritePodcastFeedDao.getAllFavorite().map { it.podcastId }
+                    .joinToString(separator = ",")
 
             val calendar = Calendar.getInstance()
             calendar.add(Calendar.WEEK_OF_YEAR, -1)
@@ -54,6 +55,12 @@ class PodcastEpisodeRepositoryImpl @Inject constructor(
                 it.toDomain()
             }
 
+            podcastEpisodeDao.insert(episodes.map { it.toEntity() })
+        }
+    }
+
+    override suspend fun fetchEpisodesByPodcastId(podcastId: Long): Result<Unit> {
+        return getEpisodesByPodcastId(podcastId = podcastId).mapCatching { episodes ->
             podcastEpisodeDao.insert(episodes.map { it.toEntity() })
         }
     }

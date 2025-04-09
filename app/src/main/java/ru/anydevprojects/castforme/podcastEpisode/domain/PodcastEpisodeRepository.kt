@@ -13,6 +13,8 @@ interface PodcastEpisodeRepository {
 
     suspend fun fetchAllEpisodesFavorites(): Result<Unit>
 
+    suspend fun fetchEpisodesByPodcastId(podcastId: Long): Result<Unit>
+
     suspend fun getEpisodesByPodcastId(podcastId: Long): Result<List<PodcastEpisode>>
 
     suspend fun getEpisodesFromFavorites(): Result<List<PodcastEpisode>>

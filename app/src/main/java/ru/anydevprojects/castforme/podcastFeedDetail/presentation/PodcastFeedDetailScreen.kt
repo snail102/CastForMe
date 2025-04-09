@@ -21,25 +21,35 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ru.anydevprojects.castforme.podcastEpisode.domain.models.PodcastEpisode
 import ru.anydevprojects.castforme.podcastFeedDetail.presentation.components.PodcastEpisodeItem
 import ru.anydevprojects.castforme.podcastFeedDetail.presentation.components.PodcastFeedDetailItem
+import ru.anydevprojects.castforme.podcastFeedDetail.presentation.models.PodcastEpisodePreviewItem
+import ru.anydevprojects.castforme.podcastFeedDetail.presentation.models.PodcastFeedDetailIntent
 import ru.anydevprojects.castforme.podcastFeedDetail.presentation.models.PodcastFeedDetailState
 import ru.anydevprojects.castforme.ui.theme.AppTheme
 
 @Composable
 fun PodcastFeedDetailScreen(
     viewModel: PodcastFeedDetailViewModel = hiltViewModel(),
-    onPodcastEpisodeItemClick: (PodcastEpisode) -> Unit
+    onPodcastEpisodeItemClick: (Long) -> Unit,
 ) {
 
     val state by viewModel.stateFlow.collectAsStateWithLifecycle()
 
     PodcastFeedDetailContent(
-        state = state
+        state = state,
+        onEpisodePodcastItemClick = {
+            onPodcastEpisodeItemClick(it.id)
+        },
+        onPlayStateBtnClick = {
+            viewModel.onIntent(PodcastFeedDetailIntent.OnPlayStateBtnClick(it))
+        }
     )
 }
 
 @Composable
 private fun PodcastFeedDetailContent(
-    state: PodcastFeedDetailState
+    state: PodcastFeedDetailState,
+    onEpisodePodcastItemClick: (PodcastEpisodePreviewItem) -> Unit,
+    onPlayStateBtnClick: (PodcastEpisodePreviewItem) -> Unit
 ) {
     Scaffold { paddingValues ->
         LazyColumn(
@@ -77,7 +87,9 @@ private fun PodcastFeedDetailContent(
                         .fillMaxWidth(),
                     isTopRounded = index == 0,
                     isBottomRounded = index == state.episodes.lastIndex,
-                    episode = item
+                    episode = item,
+                    onItemClick = onEpisodePodcastItemClick,
+                    onPlayStateBtnClick = onPlayStateBtnClick
                 )
             }
         }
@@ -89,7 +101,9 @@ private fun PodcastFeedDetailContent(
 private fun PodcastFeedDetailContentPreview() {
     AppTheme {
         PodcastFeedDetailContent(
-            state = PodcastFeedDetailState()
+            state = PodcastFeedDetailState(),
+            onEpisodePodcastItemClick = {},
+            onPlayStateBtnClick = {}
         )
     }
 }
