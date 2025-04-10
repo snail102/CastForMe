@@ -39,4 +39,16 @@ interface PodcastFeedDao {
     fun getPodcastWithFavorite(podcastId: Long): Flow<PodcastFeedWithFavorite?>
 
 
+    @Query(
+        """
+        SELECT * FROM podcast_feed
+        WHERE id = (
+            SELECT feed_id FROM podcast_episode WHERE id = :id
+        )
+    """
+    )
+    suspend fun getPodcastNameByEpisodeId(id: Long): PodcastFeedEntity?
+
+
+
 }

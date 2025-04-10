@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">CastForMe</string>
+    <string name="notification_channel_name">Media control</string>
+
 </resources>

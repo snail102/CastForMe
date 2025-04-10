@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -42,7 +43,11 @@ import com.mohamedrejeb.richeditor.model.rememberRichTextState
 import com.mohamedrejeb.richeditor.ui.material3.RichText
 import ru.anydevprojects.castforme.R
 import ru.anydevprojects.castforme.podcastEpisodeDetail.presentation.components.DownloadProcessButton
+import ru.anydevprojects.castforme.podcastEpisodeDetail.presentation.models.PodcastEpisodeDetailIntent.OnPlayStateChange
 import ru.anydevprojects.castforme.podcastEpisodeDetail.presentation.models.PodcastEpisodeDetailState
+import ru.anydevprojects.castforme.podcastFeedDetail.presentation.models.PodcastFeedDetailIntent
+import ru.anydevprojects.castforme.ui.common.IconControlBtn
+import ru.anydevprojects.castforme.ui.common.playerStateButton.PlayerUiState
 import ru.anydevprojects.castforme.ui.theme.AppTheme
 
 @Composable
@@ -53,20 +58,18 @@ fun PodcastEpisodeDetailScreen(
     val state by viewModel.stateFlow.collectAsStateWithLifecycle()
 
     PodcastEpisodeDetailContent(
-        state = state
+        state = state,
+        onPlayStateBtnClick = {
+            viewModel.onIntent(OnPlayStateChange)
+        }
     )
 }
 
 @Composable
 private fun PodcastEpisodeDetailContent(
-    state: PodcastEpisodeDetailState
+    state: PodcastEpisodeDetailState,
+    onPlayStateBtnClick: () -> Unit
 ) {
-
-    val iconPlayState = if (state.isPlaying) {
-        R.drawable.ic_pause
-    } else {
-        R.drawable.ic_play
-    }
 
     val richTextState = rememberRichTextState()
 
@@ -139,21 +142,34 @@ private fun PodcastEpisodeDetailContent(
 
                     VerticalDivider(modifier = Modifier.fillMaxHeight())
 
+                    //TODO вынести в отдельную функцию
                     Box(
                         modifier = Modifier
                             .fillMaxHeight()
                             .weight(1f)
                             .clickable(
-                                onClick = {}
+                                onClick = onPlayStateBtnClick
                             ),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            modifier = Modifier.size(32.dp),
-                            painter = painterResource(iconPlayState),
-                            tint = MaterialTheme.colorScheme.primary,
-                            contentDescription = null
-                        )
+                        if (state.playerUiState is PlayerUiState.Loading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(32.dp),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        } else {
+                            val iconPlayState = if (state.playerUiState is PlayerUiState.Playing) {
+                                R.drawable.ic_pause
+                            } else {
+                                R.drawable.ic_play
+                            }
+                            Icon(
+                                modifier = Modifier.size(32.dp),
+                                painter = painterResource(iconPlayState),
+                                tint = MaterialTheme.colorScheme.primary,
+                                contentDescription = null
+                            )
+                        }
                     }
                 }
             }
@@ -187,7 +203,8 @@ private fun PodcastEpisodeDetailContentPreview() {
                 title = "hsabdhaudabsdjasbdiasbdasojd",
                 description = "sadknadnkasd",
                 imageUrl = ""
-            )
+            ),
+            onPlayStateBtnClick = {}
         )
     }
 }

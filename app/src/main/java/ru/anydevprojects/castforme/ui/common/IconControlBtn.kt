@@ -24,15 +24,14 @@ fun IconControlBtn(
     @DrawableRes deactivateIconResId: Int,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    tint: Color = Color.White,
-    sizeIcon: Dp = 24.dp
+    tint: Color = Color.White
 ) {
     IconButton(
         modifier = modifier,
         onClick = onClick
     ) {
         Icon(
-            modifier = Modifier,
+            modifier = Modifier.fillMaxSize(0.75f),
             painter = painterResource(if (isActivate) activateIconResId else deactivateIconResId),
             contentDescription = null,
             tint = tint

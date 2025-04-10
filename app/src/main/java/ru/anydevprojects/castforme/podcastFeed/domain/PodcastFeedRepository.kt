@@ -13,4 +13,6 @@ interface PodcastFeedRepository {
 
     suspend fun fetchPodcastFeedById(id: Long): Result<Unit>
 
+    suspend fun getPodcastNameByEpisodeIdFromLocal(episodeId: Long): Result<String>
+
 }

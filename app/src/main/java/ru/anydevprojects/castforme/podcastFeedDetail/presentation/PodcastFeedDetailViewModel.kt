@@ -8,9 +8,13 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import ru.anydevprojects.castforme.core.mvi.BaseViewModel
-import ru.anydevprojects.castforme.home.presentation.models.toUi
+import ru.anydevprojects.castforme.core.player.domain.Player
+import ru.anydevprojects.castforme.core.player.domain.models.MediaData
+import ru.anydevprojects.castforme.core.player.domain.models.PlayMediaData
+import ru.anydevprojects.castforme.core.player.domain.models.PlayState
 import ru.anydevprojects.castforme.podcastEpisode.domain.PodcastEpisodeRepository
 import ru.anydevprojects.castforme.podcastFeed.domain.PodcastFeedRepository
+import ru.anydevprojects.castforme.podcastFeedDetail.presentation.models.PodcastEpisodePreviewItem
 import ru.anydevprojects.castforme.podcastFeedDetail.presentation.models.PodcastFeedDetailIntent
 import ru.anydevprojects.castforme.podcastFeedDetail.presentation.models.PodcastFeedDetailState
 import ru.anydevprojects.castforme.podcastFeedDetail.presentation.models.PodcastFeedDetailUi
@@ -21,7 +25,8 @@ import javax.inject.Inject
 class PodcastFeedDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val podcastFeedRepository: PodcastFeedRepository,
-    private val podcastEpisodeRepository: PodcastEpisodeRepository
+    private val podcastEpisodeRepository: PodcastEpisodeRepository,
+    private val player: Player
 ) : BaseViewModel<PodcastFeedDetailState, PodcastFeedDetailIntent, Nothing>(
     PodcastFeedDetailState()
 ) {
@@ -33,9 +38,70 @@ class PodcastFeedDetailViewModel @Inject constructor(
     init {
         fetchPodcastFeed()
         fetchEpisodes()
-        podcastFeedObserver()
-        episodesObserver()
+        podcastFeedObserve()
+        episodesObserve()
+        currentMediaObserve()
+        playingStateObserve()
     }
+
+
+    private fun currentMediaObserve() {
+        player.currentMedia.onEach { mediaData ->
+            when (mediaData) {
+                is MediaData.Content -> {
+                    updateState {
+                        copy(
+                            episodes = lastContentState.episodes.map {
+                                it.copy(
+                                    isPlaying = it.id == mediaData.id && player.playState.value is PlayState.Playing
+                                )
+                            }
+                        )
+                    }
+
+                }
+
+                MediaData.Init -> {}
+                MediaData.Loading -> {}
+            }
+        }.launchIn(viewModelScope)
+    }
+
+
+    private fun playingStateObserve() {
+        player.playState.onEach { playState ->
+            when (playState) {
+                PlayState.Init -> {}
+                PlayState.Loading -> {}
+                PlayState.Pause -> {
+                    updateState {
+                        copy(
+                            episodes = lastContentState.episodes.map {
+                                it.copy(
+                                    isPlaying = false
+                                )
+                            }
+                        )
+
+                    }
+                }
+
+                PlayState.Playing -> {
+                    updateState {
+                        copy(
+                            episodes = lastContentState.episodes.map {
+                                it.copy(
+                                    isPlaying = it.id == player.currentMediaContent?.id
+                                )
+                            }
+
+                        )
+                    }
+                }
+            }
+        }.launchIn(viewModelScope)
+    }
+
 
     private fun fetchPodcastFeed() {
         viewModelScope.launch {
@@ -51,7 +117,7 @@ class PodcastFeedDetailViewModel @Inject constructor(
         }
     }
 
-    private fun podcastFeedObserver() {
+    private fun podcastFeedObserve() {
         podcastFeedRepository.getPodcastFeedByIdFlow(
             id = podcastFeedId
         ).onEach { podcastFeed ->
@@ -68,7 +134,7 @@ class PodcastFeedDetailViewModel @Inject constructor(
         }.launchIn(viewModelScope)
     }
 
-    private fun episodesObserver() {
+    private fun episodesObserve() {
         podcastEpisodeRepository.getPodcastEpisodesFlow(podcastFeedId).onEach {
             updateState {
                 copy(
@@ -81,8 +147,21 @@ class PodcastFeedDetailViewModel @Inject constructor(
 
     override fun onIntent(intent: PodcastFeedDetailIntent) {
         when (intent) {
+            is PodcastFeedDetailIntent.OnPlayStateBtnClick -> changePlayState(intent.episode)
+        }
+    }
 
-            else -> {}
+    private fun changePlayState(item: PodcastEpisodePreviewItem) {
+        viewModelScope.launch {
+            player.play(
+                PlayMediaData(
+                    id = item.id,
+                    title = item.name,
+                    imageUrl = item.imageUrl,
+                    audioUrl = item.audioUrl,
+                    duration = item.duration
+                )
+            )
         }
     }
 }

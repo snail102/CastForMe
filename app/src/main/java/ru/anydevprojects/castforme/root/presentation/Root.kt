@@ -17,14 +17,22 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.BottomSheetScaffoldState
+import androidx.compose.material.BottomSheetValue
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.rememberBottomSheetState
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -41,6 +49,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -55,19 +65,27 @@ import ru.anydevprojects.castforme.podcastEpisodeDetail.presentation.PodcastEpis
 import ru.anydevprojects.castforme.podcastEpisodeDetail.presentation.PodcastEpisodeDetailScreenDestination
 import ru.anydevprojects.castforme.podcastFeedDetail.presentation.PodcastFeedDetailScreen
 import ru.anydevprojects.castforme.podcastFeedDetail.presentation.PodcastFeedDetailScreenDestination
+import ru.anydevprojects.castforme.root.presentation.models.MainIntent
 import ru.anydevprojects.castforme.ui.common.SheetCollapsed
+import ru.anydevprojects.castforme.ui.common.bottomsheet.currentFraction
+import kotlin.compareTo
 import kotlin.math.roundToInt
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
-fun Root() {
+fun Root(
+    viewModel: MainViewModel = hiltViewModel()
+) {
     val navController = rememberNavController()
 
-    val bottomSheetScaffoldState = rememberBottomSheetScaffoldState(
-        bottomSheetState = rememberStandardBottomSheetState(
-            initialValue = SheetValue.PartiallyExpanded
+    val bottomSheetScaffoldState = androidx.compose.material.rememberBottomSheetScaffoldState(
+        bottomSheetState = rememberBottomSheetState(
+            initialValue = BottomSheetValue.Collapsed
         )
     )
+
+    val state by viewModel.stateFlow.collectAsStateWithLifecycle()
+    val trackPosition = viewModel.trackPosition.collectAsState()
 
 
     val navigationBars = WindowInsets.navigationBars.asPaddingValues()
@@ -76,54 +94,45 @@ fun Root() {
         mutableStateOf(16.dp)
     }
 
-    CustomBottomSheetScaffold(
-//        scaffoldState = bottomSheetScaffoldState,
-//        sheetDragHandle = null,
-//        sheetShape = RoundedCornerShape(
-//            topStart = radiusBottomSheet,
-//            topEnd = radiusBottomSheet
-//        ),
-//        sheetPeekHeight = if (true) {
-//            100.dp
-//        } else {
-//            0.dp
-//        },
-        sheetContent = {
-            if (true) {
-                SheetContent(
-                    heightFraction = 1f
-                ) {
-                    SheetExpanded(
-                        currentFraction = 0.5f
-                    ) {
-                        MediaPlayerControlScreen()
-                    }
-                    SheetCollapsed(
-                        isCollapsed = bottomSheetScaffoldState.bottomSheetState.isVisible,
-                        currentFraction = 0.5f,
-                        onSheetClick = {}
-                    ) {
-
-                        MiniPlayer(
-                            modifier = Modifier
-                                .clip(
-                                    RoundedCornerShape(
-                                        topStart = 16.dp,
-                                        topEnd = 16.dp
-                                    )
-                                )
-                                .height(100.dp),
-                            paddingValues = navigationBars,
-                            isPlaying = true,
-                            onClick = {
-                                //viewModel.onChangePlayState()
-                            },
-                            nameEpisode = "playerControlState.title",
-                            timePosition = 0.5f,
-                            coverUrl = "playerControlState.imageUrl"
-                        )
-                    }
+    LaunchedEffect(bottomSheetScaffoldState.bottomSheetState.progress) {
+        snapshotFlow { bottomSheetScaffoldState.bottomSheetState }.collect {
+            Log.d("bottomSheet", "${bottomSheetScaffoldState.currentFraction}")
+            kotlin.runCatching {
+                if (bottomSheetScaffoldState.currentFraction > 0.99) {
+                    radiusBottomSheet = 0.dp
+                } else {
+                    radiusBottomSheet = 16.dp
                 }
+            }
+        }
+    }
+
+
+    androidx.compose.material.BottomSheetScaffold(
+        scaffoldState = bottomSheetScaffoldState,
+        sheetShape = RoundedCornerShape(
+            topStart = radiusBottomSheet,
+            topEnd = radiusBottomSheet
+        ),
+        sheetPeekHeight = if (state.isEnablePlayerControl) {
+            100.dp
+        } else {
+            0.dp
+        },
+        sheetBackgroundColor = MaterialTheme.colorScheme.primaryContainer,
+        sheetContent = {
+            if (state.isEnablePlayerControl) {
+                PlayerSheetContent(
+                    bottomSheetScaffoldState = bottomSheetScaffoldState,
+                    navigationBars = navigationBars,
+                    isPlaying = state.isPlaying,
+                    imageUrl = state.imageUrl,
+                    episodeName = state.nameEpisode,
+                    trackPosition = trackPosition,
+                    onPlayStatusBtnClick = {
+                        viewModel.onIntent(MainIntent.OnChangePlayState)
+                    }
+                )
             }
         }
     ) { paddingValues ->
@@ -184,69 +193,50 @@ fun Root() {
 }
 
 @Composable
-fun CustomBottomSheetScaffold(
-    modifier: Modifier = Modifier,
-    sheetHeight: Dp = 300.dp,
-    peekHeight: Dp = 64.dp,
-    sheetBackground: Color = Color.LightGray,
-    onProgressChanged: (Float) -> Unit = {},
-    topBar: @Composable (() -> Unit)? = null,
-    sheetContent: @Composable () -> Unit,
-    content: @Composable (PaddingValues) -> Unit,
+private fun PlayerSheetContent(
+    bottomSheetScaffoldState: BottomSheetScaffoldState,
+    navigationBars: PaddingValues,
+    isPlaying: Boolean,
+    imageUrl: String,
+    episodeName: String,
+    trackPosition: State<Float>,
+    onPlayStatusBtnClick: () -> Unit
 ) {
-    val density = LocalDensity.current
-    val peekHeightPx = with(density) { peekHeight.toPx() }
 
-    val coroutineScope = rememberCoroutineScope()
-
-    val sheetHeightPx = with(LocalDensity.current) { sheetHeight.toPx() }
-
-    val offsetY = remember { Animatable(sheetHeightPx) }
-    var progress by remember { mutableFloatStateOf(0f) }
-
-    LaunchedEffect(progress) {
-        println(progress)
+    val currentFraction = remember(bottomSheetScaffoldState.currentFraction) {
+        derivedStateOf { bottomSheetScaffoldState.currentFraction == 1f }
     }
 
-    // Gesture + snapping logic
-    val dragGesture = Modifier.pointerInput(Unit) {
-        detectVerticalDragGestures(
-            onVerticalDrag = { change, dragAmount ->
-                val newOffset = (offsetY.value + dragAmount).coerceIn(0f, sheetHeightPx)
-                coroutineScope.launch { offsetY.snapTo(newOffset) }
-
-                // Расчёт прогресса
-                val totalDistance = sheetHeightPx - peekHeightPx
-                val currentDistance = sheetHeightPx - newOffset
-                progress = (currentDistance / totalDistance).coerceIn(0f, 1f)
-            },
-            onDragEnd = {
-                coroutineScope.launch {
-                    val shouldExpand = offsetY.value < (sheetHeightPx + peekHeightPx) / 2
-                    val target = if (shouldExpand) 0f else sheetHeightPx
-                    offsetY.animateTo(target, tween(300))
-                    progress = if (shouldExpand) 1f else 0f
-                }
-            }
-        )
-    }
-
-    Box(modifier.fillMaxSize()) {
-        Column(modifier.fillMaxSize()) {
-            topBar?.invoke()
-            content(PaddingValues())
-        }
-
-        // Sheet content
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(sheetHeight)
-                .offset { IntOffset(x = 0, y = offsetY.value.roundToInt()) }
-                .background(sheetBackground, shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-                .then(dragGesture)
+    SheetContent(
+        heightFraction = 1f
+    ) {
+        SheetExpanded(
+            currentFraction = bottomSheetScaffoldState.currentFraction
         ) {
-            sheetContent()
+            MediaPlayerControlScreen()
+        }
+        SheetCollapsed(
+            isCollapsed = bottomSheetScaffoldState.bottomSheetState.isCollapsed,
+            currentFraction = bottomSheetScaffoldState.currentFraction,
+            onSheetClick = {}
+        ) {
+            if (!currentFraction.value) {
+                MiniPlayer(
+                    modifier = Modifier
+                        .clip(
+                            RoundedCornerShape(
+                                topStart = 16.dp,
+                                topEnd = 16.dp
+                            )
+                        ),
+                    paddingValues = navigationBars,
+                    isPlaying = isPlaying,
+                    onClick = onPlayStatusBtnClick,
+                    nameEpisode = episodeName,
+                    timePosition = trackPosition,
+                    coverUrl = imageUrl
+                )
+            }
         }
     }
 }

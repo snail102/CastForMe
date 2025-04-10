@@ -62,4 +62,10 @@ class PodcastFeedRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getPodcastNameByEpisodeIdFromLocal(episodeId: Long): Result<String> {
+        return kotlin.runCatching {
+            podcastFeedDao.getPodcastNameByEpisodeId(id = episodeId)?.title.orEmpty()
+        }
+    }
+
 }
